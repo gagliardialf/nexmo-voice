@@ -1,0 +1,27 @@
+{
+  "name": "cst-training-emea",
+  "version": "1.0.0",
+  "description": "Training Session Feb 2020 for CST EMEA Team",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexmo-se/cst-training-emea.git"
+  },
+  "author": "Enrico Portolan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nexmo-se/cst-training-emea/issues"
+  },
+  "homepage": "https://github.com/nexmo-se/cst-training-emea#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "nexmo": "^2.6.0-beta-1",
+    "nexmo-client": "^6.0.7",
+    "path": "^0.12.7"
+  }
+}
