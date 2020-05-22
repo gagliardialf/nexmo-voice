@@ -5,6 +5,7 @@
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
         integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="nexmoClient.js"></script>
 </head>
 
@@ -15,9 +16,10 @@
             <form id="call-phone-form" class="col-xs-12">
                 <div class="input-group">
                     <input id="phone-number-input" type="text" name="phonenumber" value="" class="form-control"
-                        placeholder="Recipient's phone number">
+                        placeholder="Recipient's phone number" required=''>
                 </div>
                 <button class="btn btn-primary" value="Call" name="call"> Call </button>
+                <button class="btn btn-primary" value="Hangup" name="hangup" disabled> Hangup </button>
             </form>
         </div>
     </div>
@@ -27,22 +29,48 @@
 
 
 <script>
-    const USER_JWT = "PASTE YOUR JWT HERE";
-    const callPhoneForm = document.getElementById("call-phone-form");
-    const callButton = callPhoneForm.children.call;
-    const hangUpButton = callPhoneForm.children.hangup;
-    let currentCall = null;
-    var NXClient = new NexmoClient({ debug: true })
-        .login(USER_JWT)
-        .then(app => {
-            callButton.addEventListener("click", event => {
-                event.preventDefault();
-                const number = null; // get number from the HTML Element 'phone-number-input'
-                // You have an application object (https://developer.nexmo.com/sdk/stitch/javascript/Application.html)
-                // You need to creates a call to phone a number. Please make sure that the number is not empty.
-            });
-        })
-        .catch(console.error);
+    $.get("generateToken", function(user_jwt) {
+        const callPhoneForm = document.getElementById("call-phone-form");
+        const callButton = callPhoneForm.children.call;
+        const hangUpButton = callPhoneForm.children.hangup;
+        let currentCall = null;
+        var NXClient = new NexmoClient({ debug: true })
+            .login(user_jwt)
+            .then(app => {
+                callButton.addEventListener("click", event => {
+                    event.preventDefault();
+                    const number = $("#phone-number-input").val() // get number from the HTML Element 'phone-number-input'
+                    if (number != '')
+                        // You have an application object (https://developer.nexmo.com/sdk/stitch/javascript/Application.html)
+                        // You need to creates a call to phone a number. Please make sure that the number is not empty.
+                        app.callServer(number);
+                    else
+                        alert('The number is empty');
+                });
+                app.on("member:call", (member, call) => {
+                    console.log('Call object gathered')
+                    currentCall = call;
+                    hangUpButton.disabled = false;
+                    callButton.disabled = true;
+                    hangUpButton.addEventListener("click", () => {
+                        currentCall.hangUp();
+                        currentCall = null;
+                        hangUpButton.disabled = true;
+                        callButton.disabled = false;
+                    });
+                });
+                app.on("call:status:changed", (call) => {
+                    console.log(call.status)
+                    if (call.status.toLowerCase() === 'completed' || call.status.toLowerCase() === 'unanswered') {
+                        console.log('Call completed')
+                        currentCall = null;
+                        hangUpButton.disabled = true;
+                        callButton.disabled = false;
+                    }
+                });                
+            })
+            .catch(console.error);
+    });    
 </script>
 
 </body>

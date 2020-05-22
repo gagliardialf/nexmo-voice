@@ -1,3 +1,4 @@
+require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -7,6 +8,15 @@ const port = 3000;
 app.use(express.static('node_modules/nexmo-client/dist'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const Nexmo = require('nexmo');
+ 
+const nexmo = new Nexmo({
+    apiKey: process.env.NEXMO_API_KEY,
+    apiSecret: process.env.NEXMO_API_SECRET,
+    applicationId: process.env.NEXMO_APPLICATION_ID,
+    privateKey: process.env.NEXMO_APPLICATION_PRIVATE_KEY_PATH,
+});
 
 
 /* STEP 1
@@ -57,19 +67,58 @@ app.get('/webhooks/answer', (req, res) => {
 	console.log("Answer:");
 	console.log(req.query);
 	var destNumber = req.query.to;
-	const ncco = [
-		{
-			  action: 'talk',			  
-			  text: 'Please enter a digit'
-		},		
-		{
-			action: 'input',
-			maxDigits: 1,
-			timeOut: 5,
-			eventUrl: [`${req.protocol}://${req.get('host')}/webhooks/dtmf`]
-		  }
-	  ]
-	
+	//calling from webpage
+	let ncco = [];
+	if (req.query.from_user === 'test')	{
+		if (process.env.OWNED_NUMBERS.indexOf(destNumber) == -1) {
+			ncco = [
+				{
+					action: 'talk',			  
+					text: 'Thanks for calling from web! You are calling a number that you do not own. Please try again.'
+				}
+			]
+		} else {
+			ncco = [
+				{
+					action: 'talk',			  
+					text: 'Thanks for calling from web! We are now connecting you to the desired number'
+				},
+				{
+					action: 'connect',					
+					endpoint: [
+					  {
+						type: 'phone',
+						number: destNumber
+					  }
+					]
+				}
+			]
+		}
+	} else {
+		//transfer NCCO
+		if (destNumber == process.env.TRANSFER_NUMBER) {
+			ncco = [
+				{
+					action: 'talk',			  
+					text: 'The call has been transferred succesfully. Bye!'
+				}
+			];
+		} else {
+			//calling from a linked phone number
+			ncco = [
+				{
+					action: 'talk',			  
+					text: 'Please enter a digit'
+				},		
+				{
+					action: 'input',
+					maxDigits: 1,
+					timeOut: 5,
+					eventUrl: [`${req.protocol}://${req.get('host')}/webhooks/dtmf`]
+				}
+			]
+		}
+	}
 	res.json(ncco);
 });
 
@@ -82,11 +131,6 @@ const onRTC = (request, response) => {
 const onDTMF = (request, response) => {
 	console.log('DTMF:' + JSON.stringify(request.body.dtmf))
 	
-	//const ncco = [{
-	//	action: 'talk',
-	//	text: `You pressed ${request.body.dtmf}`
-	//  }]
-
 	let ncco = dtmfToNcco(request.body.dtmf);
 	if (!ncco) {
 		ncco =  [
@@ -145,10 +189,10 @@ const dtmfToNcco = (dtmf) => {
 					endpoint: [
 					  {
 						type: 'phone',
-						number: '442039051305'
+						number: process.env.TRANSFER_NUMBER
 					  }
 					]
-				  }
+				}
 			];
 		default:
 			return null;
@@ -168,5 +212,22 @@ app
 app.get('/', function (req, res) {
 	res.sendFile(path.join(__dirname + '/index.html'));
 });
+
+app.get('/generateToken', function (req, res) {
+	const aclPaths = {
+		"paths": {
+		  "/*/users/**": {},
+		  "/*/conversations/**": {},
+		  "/*/sessions/**": {},
+		  "/*/devices/**": {},
+		  "/*/image/**": {},
+		  "/*/media/**": {},
+		  "/*/applications/**": {},
+		  "/*/push/**": {},
+		  "/*/knocking/**": {}
+		}
+	  }	
+	res.status(200).end(nexmo.generateJwt({sub: 'test', acl: aclPaths}));
+})
 
 app.listen(port, () => console.log(`Server listening on port ${port}!`));
