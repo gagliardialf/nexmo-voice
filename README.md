@@ -18,3 +18,5 @@ Build a Voice API call menu that presents your users with a list of options. The
 3. run the server (`node server.js`). It will run on port 3000
 4. expose it on the Internet with ngrok
 5. set up the Nexmo application webhooks for answer, events and rtc
+
+The webpage on http://localhost:3000 allows calls towards on of the `OWNED_NUMBERS`; otherwise, a message is playeded informing that the inserted number is not allowed
