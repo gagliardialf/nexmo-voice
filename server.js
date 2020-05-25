@@ -67,21 +67,23 @@ app.get('/webhooks/answer', (req, res) => {
 	console.log("Answer:");
 	console.log(req.query);
 	var destNumber = req.query.to;
+	let ownedNumbers = process.env.OWNED_NUMBERS.split(',');
+	console.log(`Owned numbers: ${ownedNumbers} - destination number: ${destNumber}`);
 	//calling from webpage
 	let ncco = [];
 	if (req.query.from_user === 'test')	{
-		if (process.env.OWNED_NUMBERS.indexOf(destNumber) == -1) {
+		if (ownedNumbers.indexOf(destNumber) == -1) {
 			ncco = [
 				{
 					action: 'talk',			  
-					text: 'Thanks for calling from web! You are calling a number that you do not own. Please try again.'
+					text: 'Hello. Thanks for calling from web! You are calling a number that you do not own. Please try again.'
 				}
 			]
 		} else {
 			ncco = [
 				{
 					action: 'talk',			  
-					text: 'Thanks for calling from web! We are now connecting you to the desired number'
+					text: 'Hello. Thanks for calling from web! We are now connecting you to the desired number'
 				},
 				{
 					action: 'connect',					
@@ -205,9 +207,6 @@ app
   .post('/webhooks/event', onEvent)
   .post('/webhooks/rtc', onRTC)
   .post('/webhooks/dtmf', onDTMF)
-
-
-
 
 app.get('/', function (req, res) {
 	res.sendFile(path.join(__dirname + '/index.html'));
